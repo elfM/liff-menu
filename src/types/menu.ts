@@ -1,15 +1,13 @@
 /**
  * LINE 设置菜单 - 方法项
- * 在此定义所有可被拖拽到菜单中的「方法」
+ * 与 src/core/richMenuApi.ts 导出的接口对应，actionKey 即 API 方法名
  */
 export interface MenuMethod {
   id: string
   name: string
   description?: string
-  /** 执行逻辑的 key，后续在 liff 或业务里根据此 key 调用对应实现 */
+  /** 执行逻辑的 key，对应 richMenuApi 中的方法名 */
   actionKey: string
-  /** 可选：图标或排序用 */
-  icon?: string
 }
 
 /**
@@ -18,10 +16,30 @@ export interface MenuMethod {
  */
 export interface MenuItem extends MenuMethod {
   menuId: string
-  order: number
 }
 
-/**
- * 预设的菜单方法池 - 你可以在 src/config/menuMethods.ts 中扩展
- */
-export type MenuMethodId = 'openLiff' | 'shareMessage' | 'openSettings' | 'scanQR' | 'openExternal'
+/** 菜单方法 id / actionKey 与 richMenuApi 方法名一致 */
+export type MenuMethodId =
+  | 'createRichMenu'
+  | 'validateRichMenu'
+  | 'setRichMenuImage'
+  | 'getRichMenuImage'
+  | 'getRichMenuList'
+  | 'getRichMenu'
+  | 'deleteRichMenu'
+  | 'setDefaultRichMenu'
+  | 'getDefaultRichMenuId'
+  | 'cancelDefaultRichMenu'
+  | 'linkRichMenuToUser'
+  | 'bulkLinkRichMenu'
+  | 'getRichMenuIdOfUser'
+  | 'unlinkRichMenuFromUser'
+  | 'bulkUnlinkRichMenu'
+  | 'richMenuBatch'
+  | 'getRichMenuBatchProgress'
+  | 'validateRichMenuBatch'
+  | 'createRichMenuAlias'
+  | 'deleteRichMenuAlias'
+  | 'updateRichMenuAlias'
+  | 'getRichMenuAlias'
+  | 'getRichMenuAliasList'

@@ -3,15 +3,21 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "packageManager": "pnpm@9.15.0",
   "scripts": {
     "dev": "vite",
+    "dev:server": "node server/index.js",
     "build": "vue-tsc -b && vite build",
+    "start": "node server/index.js",
     "preview": "vite preview"
   },
   "dependencies": {
     "@line/liff": "^2.23.0",
+    "express": "^4.22.1",
+    "pinia": "^3.0.4",
     "vue": "^3.4.21",
-    "vuedraggable": "^4.1.0"
+    "vue-draggable-plus": "^0.6.1",
+    "vue-router": "^4.4.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.4",
