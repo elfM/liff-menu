@@ -62,8 +62,18 @@
             <span class="order">{{ index + 1 }}</span>
             <div class="info">
               <span class="name">{{ item.name }}</span>
+              <!-- 创建 Rich Menu：需输入 body JSON -->
+              <div v-if="item.actionKey === 'createRichMenu'" class="item-params">
+                <label class="param-label">Body (JSON)</label>
+                <textarea
+                  v-model="createRichMenuBodyByMenuId[item.menuId]"
+                  class="param-textarea"
+                  placeholder='{"size":{"width":2500,"height":1686},"selected":false,"name":"菜单","chatBarText":"打开","areas":[]}'
+                  rows="6"
+                />
+              </div>
               <!-- 上传 Rich Menu 图片：需配置 richMenuId 并选择图片 -->
-              <div v-if="item.actionKey === 'setRichMenuImage'" class="item-params">
+              <div v-else-if="item.actionKey === 'setRichMenuImage'" class="item-params">
                 <input
                   v-model="richMenuIdByMenuId[item.menuId]"
                   type="text"
@@ -81,6 +91,14 @@
                 </label>
               </div>
             </div>
+            <button
+              type="button"
+              class="btn-remove"
+              title="从执行任务中删除"
+              @click.stop="removeMenuItem(index)"
+            >
+              ×
+            </button>
           </div>
         </VueDraggable>
       </section>
@@ -120,8 +138,10 @@ import { ref, computed } from 'vue'
 import { VueDraggable } from 'vue-draggable-plus'
 import type { MenuMethod, MenuItem } from '@/types/menu'
 import { defaultMenuMethods } from '@/config/menuMethods'
+import type { RichMenuRequestBody } from '@/core'
 import {
   createRichMenuConfig,
+  createRichMenu,
   getRichMenuList,
   getRichMenuAliasList,
   getRichMenu,
@@ -183,6 +203,8 @@ const availableMethods = ref<MenuMethod[]>([])
 // 右侧：当前菜单顺序，按此顺序同步执行
 const menuItems = ref<MenuItem[]>([])
 
+/** 创建 Rich Menu：按 menuId 存储用户输入的 body JSON 字符串 */
+const createRichMenuBodyByMenuId = ref<Record<string, string>>({})
 /** 上传 Rich Menu 图片：按 menuId 存储用户选择的图片文件（仅 setRichMenuImage 使用） */
 const imageFileByMenuId = ref<Record<string, File>>({})
 /** 上传 Rich Menu 图片：按 menuId 存储用户输入的 richMenuId */
@@ -217,6 +239,11 @@ function cloneMethod(el: MenuMethod): MenuItem {
 function onClone(event: any) {
   console.log(event)
   console.log('menu', menuItems)
+}
+
+/** 从执行任务中删除指定项 */
+function removeMenuItem(index: number) {
+  menuItems.value.splice(index, 1)
 }
 
 /** 用户为「上传 Rich Menu 图片」选择了文件时，按 menuId 存起来 */
@@ -267,6 +294,23 @@ async function runSequence() {
     try {
       const extra = item as MenuItem & { richMenuId?: string; userId?: string; richMenuAliasId?: string }
       switch (item.actionKey) {
+        case 'createRichMenu': {
+          const bodyStr = createRichMenuBodyByMenuId.value[item.menuId]?.trim()
+          if (!bodyStr) {
+            runLogs.value.push({ time, name: item.name, actionKey: item.actionKey, success: false, message: '需填写 Body JSON' })
+            break
+          }
+          try {
+            const body = JSON.parse(bodyStr) as RichMenuRequestBody
+            const result = await createRichMenu(config, body)
+            apiLogger.info(item.actionKey, '创建成功', result)
+            runLogs.value.push({ time, name: item.name, actionKey: item.actionKey, success: true, message: `richMenuId: ${result.richMenuId}`, detail: JSON.stringify(result, null, 2) })
+          } catch (parseErr) {
+            const msg = parseErr instanceof Error ? parseErr.message : String(parseErr)
+            runLogs.value.push({ time, name: item.name, actionKey: item.actionKey, success: false, message: msg.startsWith('Unexpected') ? 'JSON 格式错误' : msg })
+          }
+          break
+        }
         case 'getRichMenuList': {
           const list = await getRichMenuList(config)
           const message = `共 ${list.length} 个菜单`
@@ -534,12 +578,59 @@ init()
   color: #666;
 }
 
+.drag-item .btn-remove {
+  margin-left: auto;
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: #999;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.drag-item .btn-remove:hover {
+  color: #c62828;
+  background: #ffebee;
+}
+
 .item-params {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
   margin-top: 0.5rem;
-  align-items: center;
+  align-items: flex-start;
+}
+
+.item-params .param-label {
+  display: block;
+  width: 100%;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #555;
+  margin-bottom: 0.25rem;
+}
+
+.param-textarea {
+  width: 100%;
+  min-height: 6rem;
+  padding: 0.5rem;
+  font-size: 0.8rem;
+  font-family: monospace;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  resize: vertical;
+}
+
+.param-textarea::placeholder {
+  color: #999;
 }
 
 .param-input {
